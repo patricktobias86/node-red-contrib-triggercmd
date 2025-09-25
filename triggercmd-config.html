@@ -1,17 +1,64 @@
 <script type="text/javascript">
 RED.nodes.registerType('triggercmd-config',{
   category: 'config',
-  defaults: { baseUrl: { value: "https://www.triggercmd.com" } },
+  defaults: { name: { value: "" }, baseUrl: { value: "https://www.triggercmd.com" } },
   credentials: { token: { type: "password" } },
-  label: function() { return this.baseUrl || "TRIGGERcmd"; }
+  label: function() { return this.baseUrl || "TRIGGERcmd"; },
+  oneditprepare: function() {
+    var $btn = $("#triggercmd-test");
+    var $res = $("#triggercmd-test-result");
+    $btn.on("click", function(e){
+      e.preventDefault();
+      var baseUrl = $("#node-config-input-baseUrl").val() || "https://www.triggercmd.com";
+      var token   = $("#node-config-input-token").val();
+      if (!token) {
+        $res.text("Enter a token first").css("color", "#c00");
+        return;
+      }
+      $btn.prop("disabled", true);
+      $res.text("Testing...").css("color", "");
+      $.ajax({
+        url: "triggercmd/test",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ baseUrl: baseUrl, token: token }),
+      }).done(function(data){
+        var cnt = (data && typeof data.sample === 'number') ? (" ("+data.sample+" items)") : "";
+        $res.text("Success" + cnt).css("color", "#3a3");
+      }).fail(function(xhr){
+        var msg = (xhr && xhr.responseJSON && (xhr.responseJSON.error || xhr.responseJSON.message)) || (xhr && xhr.status ? ("HTTP "+xhr.status) : "Failed");
+        $res.text("Failed: " + msg).css("color", "#c00");
+      }).always(function(){
+        $btn.prop("disabled", false);
+      });
+    });
+  }
 });
 </script>
 
-<div class="form-row">
-  <label for="node-config-input-baseUrl"><i class="fa fa-globe"></i> Base URL</label>
-  <input type="text" id="node-config-input-baseUrl" placeholder="https://www.triggercmd.com">
-</div>
-<div class="form-row">
-  <label for="node-config-input-token"><i class="fa fa-key"></i> Token</label>
-  <input type="password" id="node-config-input-token">
-</div>
+<script type="text/x-red" data-template-name="triggercmd-config">
+  <div class="form-row">
+    <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-config-input-name" placeholder="optional">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-baseUrl"><i class="fa fa-globe"></i> Base URL</label>
+    <input type="text" id="node-config-input-baseUrl" placeholder="https://www.triggercmd.com">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-token"><i class="fa fa-key"></i> Token</label>
+    <input type="password" id="node-config-input-token" autocomplete="off">
+    <button id="triggercmd-test" class="red-ui-button" style="margin-left:8px;">Test connection</button>
+    <span id="triggercmd-test-result" class="red-ui-editor-text" style="margin-left:8px;"></span>
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="triggercmd-config">
+  <p>Configure your TRIGGERcmd API connection.</p>
+  <ul>
+    <li><strong>Base URL</strong>: leave as <code>https://www.triggercmd.com</code> unless using a self-hosted endpoint.</li>
+    <li><strong>Token</strong>: your TRIGGERcmd API token (Bearer token).</li>
+  </ul>
+  <p>This config is used by the TRIGGERcmd nodes.</p>
+  
+</script>

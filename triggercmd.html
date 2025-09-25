@@ -1,0 +1,177 @@
+<script type="text/javascript">
+(function() {
+  function fillDatalist($list, values) {
+    $list.empty();
+    (values || []).sort().forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      $list.append(opt);
+    });
+  }
+
+  async function fetchCommandList(configId) {
+    if (!configId) return null;
+    try {
+      return await $.getJSON(`triggercmd/${configId}/commandList`);
+    } catch (e) {
+      // swallow; we'll fall back to manual typing
+      return null;
+    }
+  }
+
+  function onComputerChange($computer, data, $triggerList, $triggerInput) {
+    const comp = $computer.val();
+    if (!data || !comp) {
+      fillDatalist($triggerList, []);
+      return;
+    }
+    const triggers = data.triggersByComputer?.[comp] || [];
+    fillDatalist($triggerList, Array.from(new Set(triggers)));
+    // If trigger input provided and empty, and exactly one option, prefill
+    if ($triggerInput && !$triggerInput.val() && triggers.length === 1) {
+      $triggerInput.val(triggers[0]);
+    }
+  }
+
+  RED.nodes.registerType('triggercmd out', {
+    category: 'output',
+    color: '##006784',
+    icon: 'triggercmd.png',
+    align: 'right',
+    paletteLabel: 'TRIGGERcmd',
+    defaults: {
+      name: { value: "" },
+      config: { type: "triggercmd-config", required: true },
+      computer: { value: "" },
+      trigger:  { value: "" },
+      params:   { value: "params" },
+      paramsType: { value: "msg" }
+    },
+    inputs: 1,
+    outputs: 1,
+    label: function() { return this.name || "TRIGGERcmd out"; },
+
+    oneditprepare: function() {
+      const $config   = $("#node-input-config");
+      const $computer = $("#node-input-computer");
+      const $trigger  = $("#node-input-trigger");
+      const $params   = $("#node-input-params");
+
+      const $compList = $("#triggercmd-computers");
+      const $trigList = $("#triggercmd-triggers");
+
+      let cachedData = null;
+
+      const load = async () => {
+        const cfgId = $config.val();
+        const data = await fetchCommandList(cfgId);
+        cachedData = data;
+        if (data?.computers?.length) {
+          fillDatalist($compList, data.computers);
+          // If computer empty and we have a single option, prefill
+          if (!$computer.val() && data.computers.length === 1) {
+            $computer.val(data.computers[0]);
+          }
+          onComputerChange($computer, data, $trigList, $trigger);
+        } else {
+          // leave empty; manual typing still works
+        }
+      };
+
+      $config.on("change", load);
+      $computer.on("change keyup", () => onComputerChange($computer, cachedData, $trigList, $trigger));
+
+      // initial attempt
+      load();
+
+      // tiny “refresh” link if you want to probe again without changing config
+      $("#triggercmd-refresh-list").on("click", function(e) {
+        e.preventDefault();
+        load();
+      });
+
+      // Typed input for params: msg/flow/global/str/num/bool/re/jsonata/env
+      try {
+        $params.css("width", "100%");
+        $params.typedInput({
+          default: this.paramsType || "msg",
+          typeField: "#node-input-paramsType",
+          types: [
+            'msg','flow','global','str','num','bool','re','jsonata','env'
+          ]
+        });
+        // Ensure initial value/type reflect saved state
+        $params.typedInput('value', this.params);
+        $params.typedInput('type', this.paramsType || 'msg');
+
+        // Add simple regex validation feedback when type is 're'
+        $params.on('change keyup', () => {
+          const type = $params.typedInput('type');
+          const val  = String($params.typedInput('value') ?? '');
+          $params.removeClass('input-error').attr('title','');
+          if (type === 're') {
+            try {
+              // Trigger validation only; do not store regex object here
+              // eslint-disable-next-line no-new
+              new RegExp(val);
+              $params.css('border-color','green');
+              $params.attr('title', 'Valid regex: ' + val);
+            } catch (e) {
+              $params.addClass('input-error');
+              $params.css('border-color','red');
+              $params.attr('title', 'Invalid regex: ' + (e && e.message ? e.message : e));
+            }
+          } else {
+            $params.css('border-color','');
+            $params.attr('title','');
+          }
+        });
+      } catch (e) {
+        // If typedInput is unavailable, leave as plain text
+      }
+    }
+  });
+
+  // list node removed; suggestions are built into the editor
+})();
+</script>
+
+<!-- TRIGGER node edit UI -->
+<script type="text/x-red" data-template-name="triggercmd out">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name">
+  </div>
+  <div class="form-row">
+    <label for="node-input-config"><i class="fa fa-cog"></i> Account</label>
+    <input type="text" id="node-input-config">
+    <a id="triggercmd-refresh-list" href="#" style="margin-left:8px;">refresh</a>
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-computer"><i class="fa fa-desktop"></i> Computer</label>
+    <input type="text" id="node-input-computer" list="triggercmd-computers" placeholder="pick or type">
+    <datalist id="triggercmd-computers"></datalist>
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-trigger"><i class="fa fa-bolt"></i> Trigger</label>
+    <input type="text" id="node-input-trigger" list="triggercmd-triggers" placeholder="pick or type">
+    <datalist id="triggercmd-triggers"></datalist>
+  </div>
+
+  <div class="form-row">
+    <label for="node-input-params"><i class="fa fa-sliders"></i> Params</label>
+    <input type="text" id="node-input-params" placeholder="value (msg/flow/global/str/num/bool/re/jsonata/env)">
+    <input type="hidden" id="node-input-paramsType">
+  </div>
+</script>
+
+<script type="text/x-red" data-help-name="triggercmd out">
+  <p>TRIGGERcmd launcher with autocomplete.</p>
+  <p><strong>Computer</strong> and <strong>Trigger</strong> fields suggest values from your account.
+     You can still type custom values. Suggestions depend on the chosen computer.</p>
+  <p><strong>Params</strong> supports sources: <code>msg</code>, <code>flow</code>, <code>global</code>, <code>env</code>, or a <code>JSONata</code> expression. Choose the type from the dropdown and provide the property/expression.</p>
+</script>
+
+<!-- list node removed -->

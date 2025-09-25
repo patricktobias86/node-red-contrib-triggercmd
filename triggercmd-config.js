@@ -1,6 +1,7 @@
 module.exports = function (RED) {
   function TriggercmdConfig(n) {
     RED.nodes.createNode(this, n);
+    this.name = n.name || "";
     this.baseUrl = n.baseUrl || "https://www.triggercmd.com";
     this.getHeaders = () => ({
       "Content-Type": "application/json",

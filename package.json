@@ -1,13 +1,45 @@
 {
   "name": "node-red-contrib-triggercmd",
-  "version": "0.1.0",
-  "description": "Node-RED nodes for TRIGGERcmd (trigger + list with autocomplete)",
-  "keywords": ["node-red"],
+  "version": "0.0.8",
+  "description": "Node-RED node for TRIGGERcmd with autocomplete",
+  "main": "nodes/config.js",
+  "keywords": [
+    "node-red",
+    "triggercmd"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/patricktobias86/node-red-contrib-triggercmd.git"
+  },
+  "author": {
+    "name": "Patrick Tobias",
+    "url": "https://github.com/patricktobias86"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "bugs": {
+    "url": "https://github.com/patricktobias86/node-red-contrib-triggercmd/issues"
+  },
+  "homepage": "https://github.com/patricktobias86/node-red-contrib-triggercmd#readme",
+  "license": "MIT",
   "node-red": {
     "nodes": {
       "triggercmd": "triggercmd.js",
       "triggercmd-config": "triggercmd-config.js"
     }
   },
-  "dependencies": { "node-fetch": "^3.3.2" }
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "dependencies": {
+     "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "mocha": "^11.7.1"
+  },
+  "scripts": {
+    "test": "mocha"
+  }
 }
