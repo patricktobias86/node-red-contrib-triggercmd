@@ -1,0 +1,13 @@
+{
+  "name": "node-red-contrib-triggercmd",
+  "version": "0.1.0",
+  "description": "Node-RED nodes for TRIGGERcmd (trigger + list with autocomplete)",
+  "keywords": ["node-red"],
+  "node-red": {
+    "nodes": {
+      "triggercmd": "triggercmd.js",
+      "triggercmd-config": "triggercmd-config.js"
+    }
+  },
+  "dependencies": { "node-fetch": "^3.3.2" }
+}

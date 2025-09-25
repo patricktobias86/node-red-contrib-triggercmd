@@ -1,0 +1,17 @@
+<script type="text/javascript">
+RED.nodes.registerType('triggercmd-config',{
+  category: 'config',
+  defaults: { baseUrl: { value: "https://www.triggercmd.com" } },
+  credentials: { token: { type: "password" } },
+  label: function() { return this.baseUrl || "TRIGGERcmd"; }
+});
+</script>
+
+<div class="form-row">
+  <label for="node-config-input-baseUrl"><i class="fa fa-globe"></i> Base URL</label>
+  <input type="text" id="node-config-input-baseUrl" placeholder="https://www.triggercmd.com">
+</div>
+<div class="form-row">
+  <label for="node-config-input-token"><i class="fa fa-key"></i> Token</label>
+  <input type="password" id="node-config-input-token">
+</div>
